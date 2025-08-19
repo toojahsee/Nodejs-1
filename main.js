@@ -45,6 +45,7 @@ window.addEventListener('keyup', (e) => (keys[e.key] = false));
 
 // 加载模型
 const loader = new GLTFLoader();
+loader.setPath('/');
 loader.load('./thanos.gltf', (gltf) => {
   thanos = gltf.scene;
   thanos.scale.set(1, 1, 1);
