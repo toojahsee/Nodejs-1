@@ -607,43 +607,43 @@
   ],
   "images": [
     {
-      "uri": "/textures/Material.001_baseColor.png"
+      "uri": "textures/Material.001_baseColor.png"
     },
     {
-      "uri": "/textures/Material.001_metallicRoughness.png"
+      "uri": "textures/Material.001_metallicRoughness.png"
     },
     {
-      "uri": "/textures/Material.001_normal.png"
+      "uri": "textures/Material.001_normal.png"
     },
     {
-      "uri": "/textures/Material.003_baseColor.png"
+      "uri": "textures/Material.003_baseColor.png"
     },
     {
-      "uri": "/textures/Material.003_metallicRoughness.png"
+      "uri": "textures/Material.003_metallicRoughness.png"
     },
     {
-      "uri": "/textures/Material.003_normal.png"
+      "uri": "textures/Material.003_normal.png"
     },
     {
-      "uri": "/textures/Material.004_baseColor.png"
+      "uri": "textures/Material.004_baseColor.png"
     },
     {
-      "uri": "/textures/Material.004_metallicRoughness.png"
+      "uri": "textures/Material.004_metallicRoughness.png"
     },
     {
-      "uri": "/textures/Material.004_emissive.png"
+      "uri": "textures/Material.004_emissive.png"
     },
     {
-      "uri": "/textures/Material.004_normal.png"
+      "uri": "textures/Material.004_normal.png"
     },
     {
-      "uri": "/textures/Material.002_baseColor.png"
+      "uri": "textures/Material.002_baseColor.png"
     },
     {
-      "uri": "/textures/Material.002_metallicRoughness.png"
+      "uri": "textures/Material.002_metallicRoughness.png"
     },
     {
-      "uri": "/textures/Material.002_normal.png"
+      "uri": "textures/Material.002_normal.png"
     }
   ],
   "materials": [
