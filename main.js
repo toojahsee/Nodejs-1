@@ -35,9 +35,12 @@ floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 
 // 变量
-let thanos;
+let thanos, dino;
+let dinoMixer; // 恐龙动画控制器
+const clock = new THREE.Clock();
 const speed = 0.05;
 const keys = {};
+let started = false;
 
 // 键盘监听
 window.addEventListener('keydown', (e) => (keys[e.key] = true));
@@ -77,84 +80,129 @@ progressText.style.fontFamily = 'monospace';
 progressText.style.textShadow = '0 0 10px #0ff, 0 0 20px #0ff';
 progressContainer.appendChild(progressText);
 
-// 动态背景动画
 const style = document.createElement('style');
 style.innerHTML = `
 @keyframes glowMove {
   0% { background-position: 0% 50%; }
   100% { background-position: 400% 50%; }
 }
+.start-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px 50px;
+  font-size: 24px;
+  font-family: monospace;
+  color: #0ff;
+  background: rgba(0,0,0,0.8);
+  border: 2px solid #0ff;
+  border-radius: 15px;
+  cursor: pointer;
+  text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+  box-shadow: 0 0 20px #0ff, 0 0 40px #0ff;
+  transition: 0.3s;
+}
+.start-btn:hover {
+  background: #0ff;
+  color: #000;
+  text-shadow: none;
+}
 `;
 document.head.appendChild(style);
 
-// 加载模型
+// === GLTF 加载器 ===
 const loader = new GLTFLoader();
 loader.setPath('/');
+
+// 加载 Thanos
 loader.load(
   './thanos.gltf',
   (gltf) => {
     thanos = gltf.scene;
-    thanos.scale.set(1, 1, 1);
+    thanos.scale.set(0.05, 0.05, 0.05);
     thanos.position.set(0, 0, 0);
     scene.add(thanos);
 
-    // 隐藏进度条
-    progressContainer.style.transition = 'opacity 1s';
-    progressContainer.style.opacity = '0';
-    setTimeout(() => progressContainer.remove(), 1000);
+    // 加载恐龙
+    loader.load(
+      './scene2.gltf',
+      (gltf2) => {
+        dino = gltf2.scene;
+        dino.scale.set(1.5, 1.5, 1.5);
+        dino.position.set(2, 0, -2);
+        scene.add(dino);
+
+        // 如果恐龙有动画
+        if (gltf2.animations && gltf2.animations.length > 0) {
+          dinoMixer = new THREE.AnimationMixer(dino);
+          const action = dinoMixer.clipAction(gltf2.animations[0]);
+          action.play();
+        }
+
+        // 显示开始按钮
+        showStartButton();
+      },
+      (xhr) => {
+        if (xhr.total) {
+          const percent = (xhr.loaded / xhr.total) * 100;
+          progressBar.style.width = percent + '%';
+          progressText.innerText = '加载恐龙 ' + Math.floor(percent) + '%';
+        }
+      },
+      (error) => {
+        console.error('恐龙加载失败:', error);
+      }
+    );
   },
   (xhr) => {
     if (xhr.total) {
       const percent = (xhr.loaded / xhr.total) * 100;
       progressBar.style.width = percent + '%';
-      progressText.innerText = '加载中 ' + Math.floor(percent) + '%';
+      progressText.innerText = '加载Thanos ' + Math.floor(percent) + '%';
     }
   },
   (error) => {
-    console.error('模型加载失败:', error);
-    progressText.innerText = '加载失败 ❌';
-    progressBar.style.background = 'red';
+    console.error('Thanos加载失败:', error);
   }
 );
 
-// UI 按钮（适配移动端）
-function createButton(id, text, x, y) {
-  const btn = document.createElement('button');
-  btn.innerText = text;
-  btn.id = id;
-  btn.style.position = 'absolute';
-  btn.style.left = x + 'px';
-  btn.style.bottom = y + 'px';
-  btn.style.width = '50px';
-  btn.style.height = '50px';
-  btn.style.borderRadius = '50%';
-  btn.style.background = 'rgba(255,255,255,0.5)';
-  btn.style.border = 'none';
-  btn.style.fontSize = '20px';
-  btn.style.userSelect = 'none';
-  btn.style.touchAction = 'none';
-  document.body.appendChild(btn);
-  return btn;
+// === 开始按钮 ===
+function showStartButton() {
+  progressContainer.style.transition = 'opacity 1s';
+  progressContainer.style.opacity = '0';
+  setTimeout(() => progressContainer.remove(), 1000);
+
+  const startBtn = document.createElement('button');
+  startBtn.className = 'start-btn';
+  startBtn.innerText = '开始体验';
+  document.body.appendChild(startBtn);
+
+  startBtn.addEventListener('click', () => {
+    startBtn.remove();
+    startExperience();
+  });
 }
 
-const upBtn = createButton('upBtn', '↑', 60, 120);
-const leftBtn = createButton('leftBtn', '←', 0, 60);
-const downBtn = createButton('downBtn', '↓', 60, 60);
-const rightBtn = createButton('rightBtn', '→', 120, 60);
+// === 音乐 ===
+const bgm = new Audio('./Interlinked (Slowed to Perfection).mp3');
+bgm.loop = true;
+bgm.volume = 0.5;
 
-// 按钮事件
-function bindBtn(btn, key) {
-  btn.addEventListener('touchstart', () => (keys[key] = true));
-  btn.addEventListener('touchend', () => (keys[key] = false));
+function startExperience() {
+  if (!started) {
+    started = true;
+    bgm.play().catch(err => console.log("自动播放需要用户交互:", err));
+    animate();
+  }
 }
-bindBtn(upBtn, 'ArrowUp');
-bindBtn(downBtn, 'ArrowDown');
-bindBtn(leftBtn, 'ArrowLeft');
-bindBtn(rightBtn, 'ArrowRight');
 
-// 动画循环
+// === 动画循环 ===
 function animate() {
+  if (!started) return;
   requestAnimationFrame(animate);
+
+  const delta = clock.getDelta();
 
   if (thanos) {
     if (keys['w'] || keys['ArrowUp']) thanos.position.z -= speed;
@@ -163,7 +211,9 @@ function animate() {
     if (keys['d'] || keys['ArrowRight']) thanos.position.x += speed;
   }
 
+  // 恐龙动画
+  if (dinoMixer) dinoMixer.update(delta);
+
   controls.update();
   renderer.render(scene, camera);
 }
-animate();
