@@ -43,15 +43,79 @@ const keys = {};
 window.addEventListener('keydown', (e) => (keys[e.key] = true));
 window.addEventListener('keyup', (e) => (keys[e.key] = false));
 
+// === 进度条 DOM ===
+const progressContainer = document.createElement('div');
+progressContainer.style.position = 'absolute';
+progressContainer.style.top = '50%';
+progressContainer.style.left = '50%';
+progressContainer.style.transform = 'translate(-50%, -50%)';
+progressContainer.style.width = '60%';
+progressContainer.style.height = '30px';
+progressContainer.style.background = 'rgba(0,0,0,0.6)';
+progressContainer.style.border = '2px solid #0ff';
+progressContainer.style.borderRadius = '15px';
+progressContainer.style.overflow = 'hidden';
+progressContainer.style.boxShadow = '0 0 20px #0ff, 0 0 40px #0ff';
+document.body.appendChild(progressContainer);
+
+const progressBar = document.createElement('div');
+progressBar.style.height = '100%';
+progressBar.style.width = '0%';
+progressBar.style.background = 'linear-gradient(90deg, #0ff, #0f0, #ff0, #f0f)';
+progressBar.style.backgroundSize = '400% 100%';
+progressBar.style.animation = 'glowMove 3s linear infinite';
+progressContainer.appendChild(progressBar);
+
+const progressText = document.createElement('div');
+progressText.style.position = 'absolute';
+progressText.style.top = '50%';
+progressText.style.left = '50%';
+progressText.style.transform = 'translate(-50%, -50%)';
+progressText.style.color = '#fff';
+progressText.style.fontSize = '18px';
+progressText.style.fontFamily = 'monospace';
+progressText.style.textShadow = '0 0 10px #0ff, 0 0 20px #0ff';
+progressContainer.appendChild(progressText);
+
+// 动态背景动画
+const style = document.createElement('style');
+style.innerHTML = `
+@keyframes glowMove {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+`;
+document.head.appendChild(style);
+
 // 加载模型
 const loader = new GLTFLoader();
 loader.setPath('/');
-loader.load('./thanos.gltf', (gltf) => {
-  thanos = gltf.scene;
-  thanos.scale.set(1, 1, 1);
-  thanos.position.set(0, 0, 0);
-  scene.add(thanos);
-});
+loader.load(
+  './thanos.gltf',
+  (gltf) => {
+    thanos = gltf.scene;
+    thanos.scale.set(1, 1, 1);
+    thanos.position.set(0, 0, 0);
+    scene.add(thanos);
+
+    // 隐藏进度条
+    progressContainer.style.transition = 'opacity 1s';
+    progressContainer.style.opacity = '0';
+    setTimeout(() => progressContainer.remove(), 1000);
+  },
+  (xhr) => {
+    if (xhr.total) {
+      const percent = (xhr.loaded / xhr.total) * 100;
+      progressBar.style.width = percent + '%';
+      progressText.innerText = '加载中 ' + Math.floor(percent) + '%';
+    }
+  },
+  (error) => {
+    console.error('模型加载失败:', error);
+    progressText.innerText = '加载失败 ❌';
+    progressBar.style.background = 'red';
+  }
+);
 
 // UI 按钮（适配移动端）
 function createButton(id, text, x, y) {
