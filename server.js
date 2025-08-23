@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, "dist"))); // 生产环境 vite buil
 
 // 所有路由都返回 index.html (支持前端路由)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 // 启动服务器
