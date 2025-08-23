@@ -3,12 +3,104 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Thanos GLTF Demo</title>
+    <title>游戏大厅</title>
     <style>
-      body { margin: 0; background: black; overflow: hidden; }
+      body {
+        margin: 0;
+        background: black;
+        color: #0ff;
+        font-family: monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        text-shadow: 0 0 10px #0ff;
+      }
+      #leaderboard {
+        width: 300px;
+        border: 1px solid #0ff;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 0 20px #0ff;
+        background: rgba(0, 0, 0, 0.6);
+      }
+      #leaderboard h2 {
+        margin-top: 0;
+        text-align: center;
+      }
+      #leaderboard ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      #leaderboard li {
+        padding: 5px 0;
+        border-bottom: 1px solid #044;
+      }
+      #startBtn {
+        font-size: 1.5rem;
+        padding: 15px 40px;
+        border: 2px solid #0ff;
+        background: rgba(0, 0, 0, 0.7);
+        color: #0ff;
+        border-radius: 15px;
+        cursor: pointer;
+        text-shadow: 0 0 10px #0ff;
+      }
+      #startBtn:hover {
+        background: rgba(0, 255, 255, 0.2);
+      }
     </style>
   </head>
   <body>
-    <script type="module" src="/main.js"></script>
+    <h1>游戏大厅</h1>
+
+    <!-- 排行榜 -->
+    <div id="leaderboard">
+      <h2>排行榜</h2>
+      <ul id="leaderboardList">
+        <li>加载中...</li>
+      </ul>
+    </div>
+
+    <!-- 开始按钮 -->
+    <button id="startBtn">开始游戏</button>
+
+    <script type="module">
+      import { fetchLeaderboard } from "./firebase.js";
+
+      // 加载排行榜
+      async function loadLeaderboard() {
+        const list = document.getElementById("leaderboardList");
+        list.innerHTML = "";
+        const data = await fetchLeaderboard(10);
+        if (data.length === 0) {
+          list.innerHTML = "<li>暂无数据</li>";
+          return;
+        }
+        data.forEach((entry, index) => {
+          const li = document.createElement("li");
+          li.textContent = `${index + 1}. ${entry.name} - ${entry.score}`;
+          list.appendChild(li);
+        });
+      }
+      loadLeaderboard();
+
+      // 点击按钮 → 隐藏大厅 → 运行 main.js
+      document.getElementById("startBtn").addEventListener("click", () => {
+        document.body.innerHTML = ""; // 清空大厅UI
+        const script = document.createElement("script");
+        script.type = "module";
+        script.src = "./main.js";
+        document.body.appendChild(script);
+      });
+    </script>
   </body>
 </html>

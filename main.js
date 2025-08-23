@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Box3Helper } from 'three';
+import { uploadScore } from './firebase.js';  // Firebase 上传分数
 
 // === 场景 ===
 const scene = new THREE.Scene();
@@ -65,7 +66,6 @@ const jumpStrength = 0.25;
 const groundY = 0;
 const obstacles = [];
 let obstacleSpeed = 0.1;
-let spawnTimer = 0;
 let score = 0;
 let gameRunning = false;
 
@@ -243,26 +243,63 @@ function updatePlayer(delta) {
   }
 }
 
+// === 安全通道绿色框 ===
+let safeBoxMesh = null;
+let safeBox = null;
+let activeObstacleZ = null;
+
 // === 生成障碍物 ===
 function spawnObstacle() {
   if (!thanos || !dino) return;
-  const laneX = (Math.random() - 0.5) * (runwayWidth - 5);
-  const clone = thanos.clone();
-  const spawnZ = dino.position.z + 120 + Math.random() * 50;
-  clone.position.set(laneX, groundY, spawnZ);
 
-  const dir = Math.random() < 0.5 ? -1 : 1;
-  const speed = 0.02 + Math.random() * 0.03;
-  const box = new THREE.Box3().setFromObject(clone);
-  const helper = new Box3Helper(box, 0xff0000);
-  scene.add(clone, helper);
-  obstacles.push({ mesh: clone, box, helper, dir, speed });
+  const spawnZ = dino.position.z + 120;
+  const dinoWidth = 1.5;
+  const safeGap = dinoWidth * 3;
+
+  const safeCenterX = (Math.random() - 0.5) * (runwayWidth - safeGap);
+
+  if (safeBoxMesh) scene.remove(safeBoxMesh);
+  const safeGeometry = new THREE.BoxGeometry(safeGap, 3, 5);
+  const safeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.3 });
+  safeBoxMesh = new THREE.Mesh(safeGeometry, safeMaterial);
+  safeBoxMesh.position.set(safeCenterX, groundY + 1.5, spawnZ);
+  scene.add(safeBoxMesh);
+
+  safeBox = new THREE.Box3().setFromObject(safeBoxMesh);
+  activeObstacleZ = spawnZ;
+
+  for (let x = -runwayWidth / 2 + 2; x <= runwayWidth / 2 - 2; x += 3) {
+    if (x > safeCenterX - safeGap / 2 && x < safeCenterX + safeGap / 2) continue;
+
+    const heights = [groundY, groundY + 2.5];
+    heights.forEach(y => {
+      const clone = thanos.clone();
+      clone.position.set(x, y, spawnZ);
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      const speed = 0.05 + Math.random() * 0.05;
+      const box = new THREE.Box3().setFromObject(clone);
+      const helper = new Box3Helper(box, 0xff0000);
+      scene.add(clone, helper);
+      obstacles.push({ mesh: clone, box, helper, dir, speed, wasInsideSafeBox: false });
+    });
+  }
 }
 
 // === 碰撞检测 ===
 function checkCollision(dino, obstacle) {
   const dinoBox = new THREE.Box3().setFromObject(dino);
   return dinoBox.intersectsBox(obstacle.box);
+}
+
+// === 游戏结束 ===
+async function gameOver() {
+  gameRunning = false;
+  const playerName = prompt("游戏结束! 输入你的昵称提交分数:", "玩家");
+  if(playerName){
+    await uploadScore(playerName, Math.floor(score));
+    alert("得分已上传!");
+  }
+  location.href = './lobby.html';
 }
 
 // === 动画循环 ===
@@ -286,20 +323,53 @@ function animate() {
     if(dino.position.z - runway2.position.z > runwayLength) runway2.position.z += runwayLength*2;
   }
 
-  spawnTimer += delta;
-  if(spawnTimer > 2.5){ spawnObstacle(); spawnTimer = 0; }
+  if(activeObstacleZ === null || (dino.position.z > activeObstacleZ + 30 && obstacles.length === 0)){
+    spawnObstacle();
+  }
 
+  // === 每个障碍物独立移动 ===
   for(let i=obstacles.length-1; i>=0; i--){
     const obs = obstacles[i];
-    obs.mesh.position.x += obs.dir * obs.speed * delta*60;
-    if(Math.abs(obs.mesh.position.x) > runwayWidth/2 -2) obs.dir*=-1;
+
+    // 移动
+    obs.mesh.position.x += obs.dir * obs.speed * delta * 60;
+
+    // 撞到跑道边缘 → 反弹
+    if(Math.abs(obs.mesh.position.x) >= runwayWidth/2 - 2){
+      obs.dir *= -1;
+      obs.mesh.position.x = Math.max(-runwayWidth/2 + 2, Math.min(runwayWidth/2 - 2, obs.mesh.position.x));
+    }
+
+    // 撞到绿色安全框边缘 → 只反弹一次
+    if(safeBox){
+      if(obs.box.intersectsBox(safeBox)){
+        if(!obs.wasInsideSafeBox){
+          obs.dir *= -1;
+          obs.mesh.position.x += obs.dir * obs.speed * delta * 60;
+          obs.wasInsideSafeBox = true;
+        }
+      } else {
+        obs.wasInsideSafeBox = false;
+      }
+    }
+
+    // 更新 hitbox
     obs.box.setFromObject(obs.mesh);
     obs.helper.updateMatrixWorld(true);
 
-    if(dino && checkCollision(dino, obs)){
-      alert("游戏结束! 得分: " + Math.floor(score));
-      location.reload();
+    // 碰撞检测
+    let playerSafe = false;
+    if(safeBox && dino){
+      const dinoBox = new THREE.Box3().setFromObject(dino);
+      playerSafe = dinoBox.intersectsBox(safeBox);
     }
+
+    if(dino && !playerSafe && checkCollision(dino, obs)){
+      gameOver();
+      return;
+    }
+
+    // 移出视野后清理
     if(obs.mesh.position.z < dino.position.z -10){
       scene.remove(obs.mesh);
       scene.remove(obs.helper);
