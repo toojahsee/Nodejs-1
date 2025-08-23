@@ -223,8 +223,8 @@ window.addEventListener('touchmove', (e)=>{
 function updatePlayer(delta) {
   if (!dino) return;
   let moveX = 0;
-  if (keys.ArrowLeft || keys.KeyA) moveX -= 0.4;
-  if (keys.ArrowRight || keys.KeyD) moveX += 0.4;
+  if (keys.ArrowLeft || keys.KeyA) moveX -= 0.2;
+  if (keys.ArrowRight || keys.KeyD) moveX += 0.2;
   dino.position.x += moveX;
   const halfWidth = runwayWidth / 2 - 0.5;
   dino.position.x = Math.max(-halfWidth, Math.min(halfWidth, dino.position.x));
