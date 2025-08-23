@@ -22,6 +22,6 @@ document.getElementById("startBtn").addEventListener("click", () => {
   document.body.innerHTML = ""; // 清空大厅UI
   const script = document.createElement("script");
   script.type = "module";
-  script.src = "./src/main.js";
+  script.src = "./main.js";
   document.body.appendChild(script);
 });
