@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Box3Helper } from 'three';
-import { uploadScore } from '/public/firebase.js';  // Firebase 上传分数
+import { uploadScore } from './firebase.js';  // Firebase 上传分数
 
 // === 场景 ===
 const scene = new THREE.Scene();
