@@ -73,8 +73,9 @@
     <!-- 开始按钮 -->
     <button id="startBtn">开始游戏</button>
 
-    <!-- 大厅逻辑入口 -->
-    <script type="module" src="./lobby.js"></script>
+    <!-- 模块化入口 -->
+    <script type="module">
+      import('@/lobby.js');  // Vite 会解析 @ 指向 src
+    </script>
   </body>
 </html>
-

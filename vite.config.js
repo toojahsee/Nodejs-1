@@ -4,8 +4,13 @@ import path from 'path'
 
 export default defineConfig({
   root: '.',         // 根目录
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')   // @ 指向 src 文件夹
+    }
+  },
   build: {
-    outDir: 'dist',  // Vite 其他资源打包输出
+    outDir: 'dist',  // Vite 打包输出目录
     rollupOptions: {
       input: path.resolve(__dirname, 'index.html'),
       output: {

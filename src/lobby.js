@@ -1,4 +1,4 @@
-import { fetchLeaderboard } from "/firebase.js";
+import { fetchLeaderboard } from "@/firebase.js";
 
 // 加载排行榜
 async function loadLeaderboard() {
@@ -17,11 +17,10 @@ async function loadLeaderboard() {
 }
 loadLeaderboard();
 
-// 点击按钮 → 隐藏大厅 → 运行 main.js
-document.getElementById("startBtn").addEventListener("click", () => {
+// 点击按钮 → 隐藏大厅 → 动态加载 main.js
+document.getElementById("startBtn").addEventListener("click", async () => {
   document.body.innerHTML = ""; // 清空大厅UI
-  const script = document.createElement("script");
-  script.type = "module";
-  script.src = "./main.js";
-  document.body.appendChild(script);
+  const mainModule = await import('@/main.js'); // Vite 会解析 @
+  // 调用 main.js 导出的启动函数，如果你 main.js 没有导出，可以直接把初始化逻辑放到 main.js 顶部
+  // 例如，如果你 main.js 顶部是立即执行逻辑，就直接运行
 });
